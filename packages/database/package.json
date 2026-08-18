@@ -1,0 +1,1 @@
+{"name":"@quality/database","version":"0.1.0","type":"module","main":"src/index.ts","dependencies":{"postgres":"^3.4.7"}}

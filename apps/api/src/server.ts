@@ -1,0 +1,13 @@
+import Fastify from 'fastify';
+import cors from '@fastify/cors';
+import { createProjectSchema } from '@quality/contracts';
+import { store } from './store.js';
+const app = Fastify({logger:true,requestTimeout:30_000});
+await app.register(cors,{origin:true});
+app.get('/health',async()=>({status:'ok',service:'quality-api',time:new Date().toISOString()}));
+app.get('/v1/projects',async()=>({data:store.listProjects()}));
+app.post('/v1/projects',async(req,reply)=>{const parsed=createProjectSchema.safeParse(req.body);if(!parsed.success)return reply.code(400).send({error:'VALIDATION_ERROR',details:parsed.error.flatten()});return reply.code(201).send({data:store.createProject(parsed.data)});});
+app.get('/v1/runs',async req=>({data:store.listRuns((req.query as {projectId?:string}).projectId)}));
+app.post('/v1/projects/:id/runs',async(req,reply)=>{const projectId=(req.params as {id:string}).id;if(!store.getProject(projectId))return reply.code(404).send({error:'PROJECT_NOT_FOUND'});return reply.code(202).send({data:store.createRun(projectId)});});
+app.setErrorHandler((error,_req,reply)=>{app.log.error(error);reply.code(500).send({error:'INTERNAL_ERROR'});});
+await app.listen({port:Number(process.env.API_PORT||4100),host:'0.0.0.0'});
