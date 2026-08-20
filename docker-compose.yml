@@ -17,8 +17,27 @@ services:
     environment:
       DATABASE_URL: postgresql://quality:quality@postgres:5432/quality
       API_PORT: 4100
+      CORS_ORIGIN: http://localhost:3000
     ports: ["4100:4100"]
     depends_on:
       postgres: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4100/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+  dashboard:
+    build:
+      context: .
+      dockerfile: infra/dashboard.Dockerfile
+      args: {NEXT_PUBLIC_API_URL: http://localhost:4100}
+    ports: ["3000:3000"]
+    depends_on:
+      api: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 volumes:
   quality-data:

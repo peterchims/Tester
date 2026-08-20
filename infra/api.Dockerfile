@@ -6,4 +6,6 @@ COPY packages/contracts/package.json packages/contracts/
 RUN npm install
 COPY . .
 RUN npm run build --workspace=@quality/contracts && npm run build --workspace=@quality/api
+USER node
+EXPOSE 4100
 CMD ["npm","run","start","--workspace=@quality/api"]

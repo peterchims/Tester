@@ -6,13 +6,20 @@ An independent product-quality control plane for web, mobile, API, DevOps, and F
 
 ```bash
 cp .env.example .env
-docker compose up -d postgres
 npm install
-npm run dev:api
-npm run dev
+npm run dev:api # terminal 1
+npm run dev     # terminal 2
 ```
 
 Dashboard: `http://localhost:3000`; API: `http://localhost:4100`.
+
+Or run the complete stack with `docker compose up --build`.
+
+## Current audit engine
+
+An audit is an asynchronous run with bounded checks for availability, response time, browser security headers, responsive viewport support, page titles, and document language. Findings use a normalized contract and produce a deterministic quality score.
+
+Targets are resolved before execution; loopback, link-local, credential-bearing, and private-network destinations are rejected to protect the runner from SSRF. Browser journeys (Playwright), Lighthouse, API collections, and Appium-backed mobile workers are planned as isolated queue consumers rather than work inside the public API process.
 
 ## Architecture
 

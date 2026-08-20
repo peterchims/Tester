@@ -9,4 +9,11 @@ const findings: Finding[] = [
  {id:'f3',title:'Image delivery consistency',category:'performance',severity:'medium',summary:'Large image transformations can delay meaningful content.',recommendation:'Pre-size media, serve modern formats, and monitor LCP by viewport.'}
 ];
 const runs = new Map<string,AuditRun>([['run-demo',{id:'run-demo',projectId:seed.id,status:'failed',score:78,startedAt:new Date(Date.now()-320000).toISOString(),completedAt:new Date().toISOString(),findings}]]);
-export const store = {listProjects:()=>[...projects.values()],getProject:(id:string)=>projects.get(id),createProject:(input:CreateProject)=>{const p={...input,id:nanoid(),createdAt:new Date().toISOString()};projects.set(p.id,p);return p;},listRuns:(projectId?:string)=>[...runs.values()].filter(r=>!projectId||r.projectId===projectId),createRun:(projectId:string)=>{const run:AuditRun={id:nanoid(),projectId,status:'queued',score:0,startedAt:new Date().toISOString(),findings:[]};runs.set(run.id,run);return run;}};
+export const store = {
+ listProjects:()=>[...projects.values()], getProject:(id:string)=>projects.get(id),
+ createProject:(input:CreateProject)=>{const p={...input,id:nanoid(),createdAt:new Date().toISOString()};projects.set(p.id,p);return p;},
+ listRuns:(projectId?:string)=>[...runs.values()].filter(r=>!projectId||r.projectId===projectId).sort((a,b)=>b.startedAt.localeCompare(a.startedAt)),
+ getRun:(id:string)=>runs.get(id),
+ createRun:(projectId:string)=>{const run:AuditRun={id:nanoid(),projectId,status:'queued',score:0,startedAt:new Date().toISOString(),findings:[]};runs.set(run.id,run);return run;},
+ updateRun:(id:string, patch:Partial<AuditRun>)=>{const run=runs.get(id);if(!run)return;const updated={...run,...patch,id:run.id,projectId:run.projectId};runs.set(id,updated);return updated;}
+};
