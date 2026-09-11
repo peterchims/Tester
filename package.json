@@ -1,1 +1,26 @@
-{"name":"quality-platform","private":true,"version":"0.1.0","workspaces":["apps/*","packages/*"],"scripts":{"dev":"npm run dev --workspace=@quality/dashboard","dev:api":"npm run dev --workspace=@quality/api","build":"npm run build --workspace=@quality/contracts && npm run build --workspace=@quality/api && npm run build --workspace=@quality/dashboard","test":"npm run test --workspaces --if-present","typecheck":"npm run build --workspace=@quality/contracts && npm run typecheck --workspace=@quality/api && npm run typecheck --workspace=@quality/dashboard"},"engines":{"node":">=22"}}
+{
+  "name": "techtester",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=@techtester/contracts && npm run build --workspace=@techtester/database && npm run build --workspace=@techtester/browser && npm run build --workspace=@techtester/analyzers && npm run build --workspace=@techtester/api && npm run build --workspace=@techtester/worker && npm run build --workspace=@techtester/web",
+    "dev:api": "npm run dev --workspace=@techtester/api",
+    "dev:worker": "npm run dev --workspace=@techtester/worker",
+    "dev:web": "npm run dev --workspace=@techtester/web",
+    "dev": "npm-run-all --parallel dev:api dev:worker dev:web",
+    "migrate": "npm run migrate --workspace=@techtester/database",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

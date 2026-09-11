@@ -2,42 +2,71 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: quality
-      POSTGRES_USER: quality
-      POSTGRES_PASSWORD: quality
+      POSTGRES_DB: techtester
+      POSTGRES_USER: techtester
+      POSTGRES_PASSWORD: techtester
     ports: ["5432:5432"]
-    volumes: [quality-data:/var/lib/postgresql/data]
+    volumes: [techtester-data:/var/lib/postgresql/data]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U quality"]
+      test: ["CMD-SHELL", "pg_isready -U techtester"]
       interval: 5s
       timeout: 3s
       retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   api:
-    build: {context: ., dockerfile: infra/api.Dockerfile}
+    build: { context: ., dockerfile: infra/api.Dockerfile }
     environment:
-      DATABASE_URL: postgresql://quality:quality@postgres:5432/quality
+      DATABASE_URL: postgresql://techtester:techtester@postgres:5432/techtester
+      REDIS_URL: redis://redis:6379
       API_PORT: 4100
       CORS_ORIGIN: http://localhost:3000
+      ARTIFACTS_DIR: /artifacts
     ports: ["4100:4100"]
+    volumes: [artifacts:/artifacts]
     depends_on:
-      postgres: {condition: service_healthy}
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:4100/health"]
       interval: 10s
       timeout: 3s
       retries: 5
-  dashboard:
+
+  worker:
+    build: { context: ., dockerfile: infra/worker.Dockerfile }
+    environment:
+      DATABASE_URL: postgresql://techtester:techtester@postgres:5432/techtester
+      REDIS_URL: redis://redis:6379
+      ARTIFACTS_DIR: /artifacts
+      SCAN_CONCURRENCY: 2
+    volumes: [artifacts:/artifacts]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  web:
     build:
       context: .
-      dockerfile: infra/dashboard.Dockerfile
-      args: {NEXT_PUBLIC_API_URL: http://localhost:4100}
+      dockerfile: infra/web.Dockerfile
+      args: { NEXT_PUBLIC_API_URL: http://localhost:4100 }
     ports: ["3000:3000"]
     depends_on:
-      api: {condition: service_healthy}
+      api: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
       interval: 10s
       timeout: 3s
       retries: 5
+
 volumes:
-  quality-data:
+  techtester-data:
+  artifacts:

@@ -1,5 +1,5 @@
 {
-  "name": "@techtester/contracts",
+  "name": "@techtester/queue",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -12,14 +12,14 @@
   },
   "scripts": {
     "build": "tsc",
-    "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/*.test.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "zod": "^4.1.5"
+    "@techtester/contracts": "*",
+    "bullmq": "^5.34.0",
+    "ioredis": "^5.4.2"
   },
   "devDependencies": {
-    "tsx": "^4.20.5",
     "typescript": "^5.9.3"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@techtester/contracts",
+  "name": "@techtester/analyzers",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -13,10 +13,12 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/*.test.ts"
+    "test": "node --import tsx --test src/**/*.test.ts"
   },
   "dependencies": {
-    "zod": "^4.1.5"
+    "@techtester/browser": "*",
+    "@techtester/contracts": "*",
+    "nanoid": "^5.1.5"
   },
   "devDependencies": {
     "tsx": "^4.20.5",
