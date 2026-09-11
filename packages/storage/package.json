@@ -1,5 +1,5 @@
 {
-  "name": "@techtester/database",
+  "name": "@techtester/storage",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -12,16 +12,9 @@
   },
   "scripts": {
     "build": "tsc",
-    "typecheck": "tsc --noEmit",
-    "migrate": "tsx src/migrate.ts"
-  },
-  "dependencies": {
-    "kysely": "^0.27.4",
-    "pg": "^8.13.1"
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/pg": "^8.11.10",
-    "tsx": "^4.20.5",
     "typescript": "^5.9.3"
   }
 }

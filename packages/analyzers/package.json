@@ -1,5 +1,5 @@
 {
-  "name": "@techtester/database",
+  "name": "@techtester/analyzers",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -13,14 +13,14 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "migrate": "tsx src/migrate.ts"
+    "test": "node --import tsx --test src/**/*.test.ts"
   },
   "dependencies": {
-    "kysely": "^0.27.4",
-    "pg": "^8.13.1"
+    "@techtester/browser": "*",
+    "@techtester/contracts": "*",
+    "nanoid": "^5.1.5"
   },
   "devDependencies": {
-    "@types/pg": "^8.11.10",
     "tsx": "^4.20.5",
     "typescript": "^5.9.3"
   }

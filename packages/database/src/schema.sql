@@ -1,6 +1,22 @@
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE TABLE IF NOT EXISTS projects (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), name text NOT NULL, kind text NOT NULL, target_url text, figma_url text, repository_url text, created_at timestamptz NOT NULL DEFAULT now());
-CREATE TABLE IF NOT EXISTS audit_runs (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE, status text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued','running','passed','failed')), score integer NOT NULL DEFAULT 0 CHECK (score BETWEEN 0 AND 100), error text, started_at timestamptz NOT NULL DEFAULT now(), completed_at timestamptz);
-CREATE TABLE IF NOT EXISTS findings (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), run_id uuid NOT NULL REFERENCES audit_runs(id) ON DELETE CASCADE, title text NOT NULL, category text NOT NULL, severity text NOT NULL, summary text NOT NULL, evidence jsonb, recommendation text NOT NULL, created_at timestamptz NOT NULL DEFAULT now());
-CREATE INDEX IF NOT EXISTS findings_run_idx ON findings(run_id);
-CREATE INDEX IF NOT EXISTS audit_runs_project_started_idx ON audit_runs(project_id, started_at DESC);
+-- TechTester schema. Idempotent: safe to run on every boot.
+
+CREATE TABLE IF NOT EXISTS scans (
+  id             text PRIMARY KEY,
+  url            text NOT NULL,
+  normalized_url text NOT NULL,
+  session_id     text NOT NULL,
+  status         text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'running', 'completed', 'failed')),
+  stage          text NOT NULL DEFAULT 'queued',
+  progress       integer NOT NULL DEFAULT 0 CHECK (progress BETWEEN 0 AND 100),
+  options        jsonb NOT NULL DEFAULT '{}'::jsonb,
+  overall_score  integer CHECK (overall_score BETWEEN 0 AND 100),
+  error          text,
+  -- The full ScanReport payload, written once the run completes.
+  report         jsonb,
+  requested_at   timestamptz NOT NULL DEFAULT now(),
+  started_at     timestamptz,
+  finished_at    timestamptz
+);
+
+CREATE INDEX IF NOT EXISTS scans_session_idx ON scans (session_id, requested_at DESC);
+CREATE INDEX IF NOT EXISTS scans_status_idx ON scans (status);

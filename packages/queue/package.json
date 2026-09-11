@@ -1,5 +1,5 @@
 {
-  "name": "@techtester/database",
+  "name": "@techtester/queue",
   "version": "0.1.0",
   "type": "module",
   "main": "dist/index.js",
@@ -12,16 +12,14 @@
   },
   "scripts": {
     "build": "tsc",
-    "typecheck": "tsc --noEmit",
-    "migrate": "tsx src/migrate.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "kysely": "^0.27.4",
-    "pg": "^8.13.1"
+    "@techtester/contracts": "*",
+    "bullmq": "^5.34.0",
+    "ioredis": "^5.4.2"
   },
   "devDependencies": {
-    "@types/pg": "^8.11.10",
-    "tsx": "^4.20.5",
     "typescript": "^5.9.3"
   }
 }
