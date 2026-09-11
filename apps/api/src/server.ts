@@ -11,12 +11,30 @@ import { getArtifactStore, screenshotKey } from '@techtester/storage';
 import { toReport, toSummary } from './summary.js';
 
 const SESSION_COOKIE = 'tt_session';
+const ALLOWED_ORIGINS = process.env.CORS_ORIGIN?.split(',');
 const app = Fastify({ logger: true, bodyLimit: 16_000 });
 
 await app.register(cors, {
-  origin: process.env.CORS_ORIGIN?.split(',') ?? true,
+  origin: ALLOWED_ORIGINS ?? true,
   credentials: true,
 });
+
+/**
+ * The SSE route below writes straight to the raw response (so it can stream),
+ * which skips Fastify's onSend hook — the one @fastify/cors uses to attach its
+ * headers. Mirror that plugin's decision manually before writeHead.
+ */
+function corsHeadersFor(request: import('fastify').FastifyRequest): Record<string, string> {
+  const origin = request.headers.origin;
+  if (!origin) return {};
+  const allowed = !ALLOWED_ORIGINS || ALLOWED_ORIGINS.includes(origin);
+  if (!allowed) return {};
+  return {
+    'access-control-allow-origin': origin,
+    'access-control-allow-credentials': 'true',
+    vary: 'Origin',
+  };
+}
 await app.register(cookie);
 await app.register(rateLimit, {
   max: Number(process.env.RATE_LIMIT_MAX ?? 60),
@@ -112,6 +130,7 @@ app.get('/v1/scans/:id/events', async (request, reply) => {
     'content-type': 'text/event-stream',
     'cache-control': 'no-cache',
     connection: 'keep-alive',
+    ...corsHeadersFor(request),
   });
 
   const send = (data: unknown) => reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);

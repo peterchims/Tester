@@ -81,7 +81,10 @@ export const createScanSchema = z.object({
     .string()
     .trim()
     .min(1)
-    .transform((value) => (/^https?:\/\//i.test(value) ? value : `https://${value}`))
+    // Only fill in a scheme when the input has none at all — an explicit
+    // non-http(s) scheme (ftp://, javascript:, ...) must fail the refine below,
+    // not get silently coerced into an https:// URL.
+    .transform((value) => (/^[a-z][a-z0-9+.-]*:\/\//i.test(value) ? value : `https://${value}`))
     .pipe(z.string().url())
     .refine((value) => ['http:', 'https:'].includes(new URL(value).protocol), 'Only HTTP(S) URLs are supported'),
   /** The caller confirms they own or are authorised to test the target. */

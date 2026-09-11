@@ -1,4 +1,4 @@
-import type IORedis from 'ioredis';
+import type { Redis } from 'ioredis';
 import {
   analyzeResponsive,
   analyzeSecurity,
@@ -16,7 +16,7 @@ interface Reporter {
   (stage: ScanStage, progress: number, message: string): Promise<void>;
 }
 
-export async function runScan(scan: ScanRow, redis: IORedis): Promise<void> {
+export async function runScan(scan: ScanRow, redis: Redis): Promise<void> {
   const report: Reporter = async (stage, progress, message) => {
     await scans.updateProgress(scan.id, { stage, progress });
     await publishProgress(redis, {

@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { Kysely, PostgresDialect, sql } from 'kysely';
+import { Generated, Kysely, PostgresDialect, Selectable, sql } from 'kysely';
 import pg from 'pg';
 import type {
   ScanOptions,
@@ -13,26 +13,29 @@ import type {
 pg.types.setTypeParser(20, (value) => Number(value)); // int8
 pg.types.setTypeParser(1700, (value) => Number(value)); // numeric
 
-export interface ScanRow {
+interface ScansTable {
   id: string;
   url: string;
   normalized_url: string;
   session_id: string;
-  status: ScanStatus;
-  stage: ScanStage;
-  progress: number;
+  status: Generated<ScanStatus>;
+  stage: Generated<ScanStage>;
+  progress: Generated<number>;
   options: ScanOptions;
-  overall_score: number | null;
-  error: string | null;
-  report: ScanReport | null;
-  requested_at: Date;
-  started_at: Date | null;
-  finished_at: Date | null;
+  overall_score: Generated<number | null>;
+  error: Generated<string | null>;
+  report: Generated<ScanReport | null>;
+  requested_at: Generated<Date>;
+  started_at: Generated<Date | null>;
+  finished_at: Generated<Date | null>;
 }
 
 interface Database {
-  scans: ScanRow;
+  scans: ScansTable;
 }
+
+/** The shape returned by every read — what the rest of the app works with. */
+export type ScanRow = Selectable<ScansTable>;
 
 let db: Kysely<Database> | null = null;
 
@@ -144,7 +147,9 @@ export const scans = {
   },
 };
 
-// Kysely + pg expect jsonb columns to be passed as serialized strings.
-function toJson<T>(value: T): unknown {
-  return sql`${JSON.stringify(value)}::jsonb`;
+// Kysely's column types describe the deserialized shape, but node-postgres needs
+// a serialized string cast to jsonb on the way in — the raw SQL fragment's runtime
+// type is correct even though it can't be expressed as `ValueExpression<...>`.
+function toJson<T>(value: T): T {
+  return sql`${JSON.stringify(value)}::jsonb` as unknown as T;
 }
