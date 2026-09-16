@@ -103,7 +103,10 @@ export async function analyzeSeo(ctx: AnalyzerContext): Promise<SeoAnalysis> {
     metaDescription: dom.metaDescription ?? '',
     url: url.pathname,
   });
-  const primary = topKeywords.find((k) => k.phrase.includes(' ')) ?? topKeywords[0];
+  // topKeywords is already sorted by real occurrence count (ties broken toward
+  // the longer phrase), so [0] is genuinely the page's most-repeated term —
+  // not a guess at "the" keyword, just what the text itself repeats most.
+  const primary = topKeywords[0];
   if (primary && !primary.inTitle && !primary.inH1) {
     findings.push(
       seo(
@@ -116,10 +119,13 @@ export async function analyzeSeo(ctx: AnalyzerContext): Promise<SeoAnalysis> {
       ),
     );
   }
-  const stuffed = topKeywords.find((k) => k.densityPct > 3);
+  // A single-digit density on its own is often just a page's genuine subject
+  // (a page about HTML will say "HTML" a lot) — only flag densities high enough
+  // that unnatural repetition, not topical focus, is the more likely explanation.
+  const stuffed = topKeywords.find((k) => k.densityPct > 6);
   if (stuffed) {
     findings.push(
-      seo('medium', `Possible keyword stuffing: "${stuffed.phrase}" (${stuffed.densityPct}% density)`, `"${stuffed.phrase}" repeats ${stuffed.occurrences} times — ${stuffed.densityPct}% of all words on the page. Unnaturally high repetition of a phrase reads as manipulative to search engines and to visitors.`, 'Vary the wording — use synonyms and related terms instead of repeating the exact phrase.', undefined, { phrase: stuffed.phrase, densityPct: stuffed.densityPct }),
+      seo('medium', `Possible keyword stuffing: "${stuffed.phrase}" (${stuffed.densityPct}% density)`, `"${stuffed.phrase}" repeats ${stuffed.occurrences} times — ${stuffed.densityPct}% of all words on the page. Repetition this high reads as manipulative to search engines and reads poorly to visitors.`, 'Vary the wording — use synonyms and related terms instead of repeating the exact phrase.', undefined, { phrase: stuffed.phrase, densityPct: stuffed.densityPct }),
     );
   }
 

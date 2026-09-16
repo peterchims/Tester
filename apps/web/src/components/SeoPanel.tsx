@@ -55,7 +55,7 @@ export function SeoPanel({ seo }: { seo: SeoSummary }) {
                   <tr key={k.phrase}>
                     <td>{k.phrase}</td>
                     <td>{k.occurrences}</td>
-                    <td className={k.densityPct > 3 ? 'densityHigh' : undefined}>{k.densityPct}%</td>
+                    <td className={k.densityPct > 6 ? 'densityHigh' : undefined}>{k.densityPct}%</td>
                     <td>{k.inTitle ? <Check size={13} /> : <X size={13} />}</td>
                     <td>{k.inH1 ? <Check size={13} /> : <X size={13} />}</td>
                     <td>{k.inMetaDescription ? <Check size={13} /> : <X size={13} />}</td>

@@ -11,9 +11,17 @@ Paste a public website URL and get a real, evidence-backed report:
 - **Security** — headers, TLS/HTTPS, cookies, mixed content, Subresource Integrity,
   CORS, known-vulnerable libraries, and light public-path probing (`/.git/HEAD`,
   `/.env`, ...) — every finding ships with a severity and a concrete fix.
+- **SEO** — indexability (noindex / robots.txt), title & meta description length,
+  canonical correctness, heading structure, structured data (JSON-LD) validity,
+  Open Graph / Twitter Card completeness, sitemap coverage, and a keyword-structure
+  table measured from the page's own rendered text (real occurrence counts and
+  density, not a guess) — every signal ships with the evidence behind it. This is
+  an on-page structural audit, not a live search-ranking check: TechTester doesn't
+  hold credentials to any search engine's ranking API, so it never reports a
+  fabricated rank number.
 
-Performance, accessibility, SEO, and broken-link auditing are planned next; deeper
-mobile testing (WebKit/iOS quirks, network throttling) follows after that.
+Performance and accessibility auditing are planned next; deeper mobile testing
+(WebKit/iOS quirks, network throttling) and a broken-link crawler follow after that.
 
 ## Quick start
 
@@ -46,7 +54,10 @@ docker compose up --build
    text, and small fonts.
 4. Architecture is fingerprinted from response headers, the raw and hydrated HTML, and
    sniffed JS globals. Security is audited from headers, TLS behaviour, cookies, and a
-   small set of polite, rate-limited path probes.
+   small set of polite, rate-limited path probes. SEO is audited from the rendered
+   DOM (title, meta tags, headings, JSON-LD, Open Graph/Twitter Card, links, and a
+   keyword-frequency pass over the page's own visible text) plus a fetch of
+   `robots.txt` and the sitemap.
 5. Findings are scored into per-category and overall percentages and persisted; the
    web app streams progress over SSE and renders the finished report.
 
@@ -59,7 +70,7 @@ apps/worker    BullMQ consumer — runs the scan pipeline end to end
 packages/
   contracts    zod schemas + types shared by every app
   browser      Playwright session manager, device matrix, in-page probes, SSRF guard
-  analyzers    responsive / stack / security analyzers + scoring
+  analyzers    responsive / stack / security / seo analyzers + scoring
   database     Postgres schema + Kysely repository
   queue        BullMQ queue + Redis pub/sub progress channel
   storage      screenshot artifact store (local disk; S3-compatible driver later)
