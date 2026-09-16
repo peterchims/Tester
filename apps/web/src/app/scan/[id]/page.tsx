@@ -8,6 +8,7 @@ import { ScoreBadge } from '@/components/ScoreBadge';
 import { ViewportGallery } from '@/components/ViewportGallery';
 import { StackPanel } from '@/components/StackPanel';
 import { SecurityPanel } from '@/components/SecurityPanel';
+import { SeoPanel } from '@/components/SeoPanel';
 import { FindingCard } from '@/components/FindingCard';
 
 export default function ScanPage({ params }: { params: Promise<{ id: string }> }) {
@@ -82,8 +83,8 @@ export default function ScanPage({ params }: { params: Promise<{ id: string }> }
             </section>
 
             <div className="comingSoon">
-              Performance, accessibility, and SEO audits are coming in the next release — this scan covers
-              responsiveness, architecture, and security.
+              Performance and accessibility audits are coming in the next release — this scan covers
+              responsiveness, architecture, security, and SEO.
             </div>
 
             {report.responsive && (
@@ -118,6 +119,17 @@ export default function ScanPage({ params }: { params: Promise<{ id: string }> }
                 </div>
                 <SecurityPanel security={report.security} />
                 <FindingsList findings={report.findings.filter((f) => f.analyzer === 'security')} />
+              </section>
+            )}
+
+            {report.seo && (
+              <section className="reportSection">
+                <div className="sectionHead">
+                  <h2>SEO</h2>
+                  <p>On-page structure, indexability, and keyword signals measured from this page&rsquo;s own content — not a ranking guess.</p>
+                </div>
+                <SeoPanel seo={report.seo} />
+                <FindingsList findings={report.findings.filter((f) => f.analyzer === 'seo')} />
               </section>
             )}
           </>

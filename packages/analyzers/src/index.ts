@@ -5,5 +5,7 @@ export type { ResponsiveAnalysis } from './responsive.js';
 export { analyzeStack } from './stack.js';
 export { analyzeSecurity } from './security.js';
 export type { SecurityAnalysis } from './security.js';
+export { analyzeSeo } from './seo.js';
+export type { SeoAnalysis } from './seo.js';
 export { computeScores } from './scoring.js';
 export type { ScoreInput, ScoreOutput } from './scoring.js';

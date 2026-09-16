@@ -152,9 +152,9 @@ pre {
 
 .pillars {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 14px;
-  max-width: 900px;
+  max-width: 1080px;
   margin: 46px auto 0;
   text-align: left;
 }
@@ -676,6 +676,176 @@ pre {
   font-weight: 600;
 }
 
+/* --- SEO panel --------------------------------------------------------- */
+.seoPanel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+}
+.indexBanner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  margin-bottom: 18px;
+  font-size: 13px;
+}
+.indexBanner.ok {
+  background: #e5f6ec;
+  color: var(--green);
+}
+.indexBanner.bad {
+  background: #fbeae8;
+  color: var(--red);
+}
+.indexBanner b {
+  display: block;
+}
+.indexBanner span {
+  display: block;
+  font-weight: 500;
+  opacity: 0.85;
+  font-size: 12px;
+  margin-top: 2px;
+}
+.seoFieldsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.seoField {
+  background: #f7f7fb;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.seoFieldHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+}
+.seoFieldHead span {
+  font-weight: 700;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: #eee;
+}
+.seoFieldHead span.ok {
+  background: #e5f6ec;
+  color: var(--green);
+}
+.seoFieldHead span.warn {
+  background: #fdf1dd;
+  color: var(--amber);
+}
+.seoFieldHead span.bad {
+  background: #fbeae8;
+  color: var(--red);
+}
+.seoFieldText {
+  margin: 8px 0 4px;
+  font-size: 13px;
+  word-break: break-word;
+}
+.seoFieldHint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+.seoFactRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.seoFact {
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: #f7f7fb;
+  color: var(--muted);
+}
+.seoFact.ok {
+  background: #e5f6ec;
+  color: var(--green);
+}
+.seoFact.bad {
+  background: #fbeae8;
+  color: var(--red);
+}
+.keywordBlock {
+  margin-bottom: 20px;
+}
+.keywordBlock h4 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.tableScroll {
+  overflow-x: auto;
+}
+.keywordTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  min-width: 480px;
+}
+.keywordTable th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--line);
+  font-size: 10.5px;
+  text-transform: uppercase;
+}
+.keywordTable td {
+  padding: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.keywordTable td svg {
+  display: block;
+}
+.keywordTable td.densityHigh {
+  color: var(--red);
+  font-weight: 700;
+}
+.seoGroups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px;
+}
+.seoGroup h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.seoGroup ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  font-size: 12.5px;
+}
+.seoInvalid {
+  color: var(--red);
+}
+.seoMuted {
+  color: var(--muted);
+  font-size: 12.5px;
+  margin: 0;
+}
+
 /* --- findings -------------------------------------------------------------- */
 .findingsList {
   margin-top: 16px;
@@ -787,6 +957,11 @@ pre {
 }
 
 /* --- responsive breakpoints for the app shell itself ------------------------ */
+@media (max-width: 980px) {
+  .pillars {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 @media (max-width: 760px) {
   .pillars {
     grid-template-columns: 1fr;

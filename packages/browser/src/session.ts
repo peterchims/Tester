@@ -2,6 +2,7 @@ import { chromium, type Browser, type BrowserContext, type Page } from 'playwrig
 import { assertSafeTarget } from './guard.js';
 import { BASE_DESKTOP, type ViewportProfile } from './devices.js';
 import { runResponsiveProbe, type ProbeResult } from './probe.js';
+import { extractSeoDom, type SeoDomExtract } from './seoExtract.js';
 
 export interface NetworkEntry {
   url: string;
@@ -24,6 +25,8 @@ export interface PageCapture {
   /** Result of sniffing well-known framework globals in the page. */
   globals: Record<string, boolean>;
   generatorMeta: string | null;
+  /** Content/meta signals extracted from the rendered DOM, for the SEO analyzer. */
+  seo: SeoDomExtract;
 }
 
 export interface ViewportRender {
@@ -52,6 +55,27 @@ const GLOBAL_SNIFFERS = `(() => {
     webflow: !!document.querySelector('html[data-wf-page], meta[name="generator"][content*="Webflow"]'),
   };
 })()`;
+
+const EMPTY_SEO_DOM: SeoDomExtract = {
+  title: null,
+  metaDescription: null,
+  metaRobots: null,
+  canonical: null,
+  lang: null,
+  charset: null,
+  headings: [],
+  visibleText: '',
+  imagesTotal: 0,
+  imagesMissingAlt: 0,
+  internalLinks: 0,
+  externalLinks: 0,
+  genericAnchorCount: 0,
+  structuredDataRaw: [],
+  openGraph: {},
+  twitterCard: {},
+  favicon: false,
+  hreflangCount: 0,
+};
 
 export class ScanBrowser {
   private constructor(private readonly browser: Browser) {}
@@ -115,13 +139,14 @@ export class ScanBrowser {
       throw new Error(`Could not load the page: ${(error as Error).message}`);
     }
 
-    const [renderedHtml, globals, generatorMeta, cookies] = await Promise.all([
+    const [renderedHtml, globals, generatorMeta, cookies, seo] = await Promise.all([
       page.content(),
       page.evaluate(GLOBAL_SNIFFERS).catch(() => ({}) as Record<string, boolean>),
       page
         .evaluate(() => document.querySelector('meta[name="generator"]')?.getAttribute('content') ?? null)
         .catch(() => null),
       context.cookies().catch(() => []),
+      page.evaluate(`(${extractSeoDom.toString()})()`).catch(() => EMPTY_SEO_DOM) as Promise<SeoDomExtract>,
     ]);
 
     const finalUrl = page.url();
@@ -144,6 +169,7 @@ export class ScanBrowser {
       })),
       globals: globals as Record<string, boolean>,
       generatorMeta,
+      seo,
     };
   }
 

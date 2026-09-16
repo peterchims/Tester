@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ScanSummary } from '@techtester/contracts';
-import { ArrowRight, Layout, Lock, ShieldCheck, Smartphone } from '@/components/icons';
+import { ArrowRight, Layout, Lock, Search, ShieldCheck, Smartphone } from '@/components/icons';
 import { ApiError, createScan, listRecentScans } from '@/lib/api';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { StatusPill } from '@/components/StatusPill';
@@ -56,7 +56,8 @@ export default function Home() {
         <h1>Test any website before you ship it.</h1>
         <p className="lede">
           Paste a URL. TechTester renders it across the full device matrix, fingerprints the architecture it was
-          built on, and audits it for security gaps — with real screenshots and fixes, not a mock dashboard.
+          built on, audits it for security gaps, and runs a deep SEO structure audit — with real screenshots and
+          fixes, not a mock dashboard.
         </p>
 
         <form className="scanForm" onSubmit={submit}>
@@ -97,6 +98,11 @@ export default function Home() {
             <ShieldCheck size={20} />
             <b>Security</b>
             <p>Headers, TLS, cookies, mixed content, exposed paths, and vulnerable libraries — each with a concrete fix.</p>
+          </div>
+          <div className="pillar">
+            <Search size={20} />
+            <b>SEO</b>
+            <p>Indexability, title/meta length, heading structure, keyword placement, structured data, and sitemap coverage — measured from the page itself, not guessed.</p>
           </div>
         </div>
       </main>

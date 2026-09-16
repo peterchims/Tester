@@ -216,6 +216,84 @@ export const securitySummarySchema = z.object({
 export type SecuritySummary = z.infer<typeof securitySummarySchema>;
 
 // ---------------------------------------------------------------------------
+// SEO summary
+// ---------------------------------------------------------------------------
+
+export const indexabilityStatus = z.enum(['indexable', 'noindex', 'blocked-by-robots']);
+export type IndexabilityStatus = z.infer<typeof indexabilityStatus>;
+
+export const seoFieldCheckSchema = z.object({
+  present: z.boolean(),
+  text: z.string().nullable(),
+  length: z.number(),
+  /** Whether the length falls in the range search engines typically render in full. */
+  withinRecommendedLength: z.boolean(),
+});
+export type SeoFieldCheck = z.infer<typeof seoFieldCheckSchema>;
+
+export const headingOutlineItemSchema = z.object({
+  level: z.number(),
+  text: z.string(),
+});
+export type HeadingOutlineItem = z.infer<typeof headingOutlineItemSchema>;
+
+/**
+ * A keyword phrase actually measured on the page — its real frequency and
+ * density, and whether it shows up in the elements search engines weight
+ * most (title, H1, meta description, URL). This is what the page's structure
+ * measurably emphasises, not a ranking prediction.
+ */
+export const keywordSignalSchema = z.object({
+  phrase: z.string(),
+  occurrences: z.number(),
+  densityPct: z.number(),
+  inTitle: z.boolean(),
+  inH1: z.boolean(),
+  inMetaDescription: z.boolean(),
+  inUrl: z.boolean(),
+});
+export type KeywordSignal = z.infer<typeof keywordSignalSchema>;
+
+export const structuredDataBlockSchema = z.object({
+  types: z.array(z.string()),
+  valid: z.boolean(),
+  error: z.string().nullable(),
+});
+export type StructuredDataBlock = z.infer<typeof structuredDataBlockSchema>;
+
+export const socialPreviewSchema = z.object({
+  present: z.boolean(),
+  missing: z.array(z.string()),
+});
+export type SocialPreviewCheck = z.infer<typeof socialPreviewSchema>;
+
+export const seoSummarySchema = z.object({
+  indexability: indexabilityStatus,
+  indexabilityReason: z.string().nullable(),
+  title: seoFieldCheckSchema,
+  metaDescription: seoFieldCheckSchema,
+  canonical: z.object({ present: z.boolean(), url: z.string().nullable(), selfReferencing: z.boolean().nullable() }),
+  h1Count: z.number(),
+  headingOutline: z.array(headingOutlineItemSchema),
+  headingOrderValid: z.boolean(),
+  wordCount: z.number(),
+  topKeywords: z.array(keywordSignalSchema),
+  imagesTotal: z.number(),
+  imagesMissingAlt: z.number(),
+  internalLinks: z.number(),
+  externalLinks: z.number(),
+  genericAnchorCount: z.number(),
+  structuredData: z.array(structuredDataBlockSchema),
+  openGraph: socialPreviewSchema,
+  twitterCard: socialPreviewSchema,
+  robotsTxt: z.object({ present: z.boolean(), blocksScannedPath: z.boolean(), sitemapDeclared: z.boolean() }),
+  sitemap: z.object({ present: z.boolean(), urlCount: z.number().nullable(), includesScannedUrl: z.boolean().nullable() }),
+  favicon: z.boolean(),
+  hreflangCount: z.number(),
+});
+export type SeoSummary = z.infer<typeof seoSummarySchema>;
+
+// ---------------------------------------------------------------------------
 // Category scores
 // ---------------------------------------------------------------------------
 
@@ -240,6 +318,7 @@ export const scanStageSchema = z.enum([
   'stack',
   'responsive',
   'security',
+  'seo',
   'scoring',
   'done',
   'error',
@@ -284,6 +363,7 @@ export const scanReportSchema = scanSummarySchema.extend({
   viewports: z.array(viewportResultSchema),
   stack: stackReportSchema.nullable(),
   security: securitySummarySchema.nullable(),
+  seo: seoSummarySchema.nullable(),
 });
 export type ScanReport = z.infer<typeof scanReportSchema>;
 

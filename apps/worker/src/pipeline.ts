@@ -2,6 +2,7 @@ import type { Redis } from 'ioredis';
 import {
   analyzeResponsive,
   analyzeSecurity,
+  analyzeSeo,
   analyzeStack,
   computeScores,
   type AnalyzerContext,
@@ -70,12 +71,15 @@ export async function runScan(scan: ScanRow, redis: Redis): Promise<void> {
       store.exists(screenshotKey(scan.id, label)) ? screenshotKey(scan.id, label) : null,
     );
 
-    await report('security', 82, 'Checking security headers, TLS, cookies, and exposed paths');
+    await report('security', 80, 'Checking security headers, TLS, cookies, and exposed paths');
     const security = await analyzeSecurity(ctx);
 
-    await report('scoring', 94, 'Computing the overall score');
-    const findings = [...responsive.findings, ...security.findings];
-    const evaluated: FindingCategory[] = ['responsiveness', 'security'];
+    await report('seo', 90, 'Auditing SEO structure, keywords, and indexability');
+    const seo = await analyzeSeo(ctx);
+
+    await report('scoring', 96, 'Computing the overall score');
+    const findings = [...responsive.findings, ...security.findings, ...seo.findings];
+    const evaluated: FindingCategory[] = ['responsiveness', 'security', 'seo'];
     const { categories, overallScore } = computeScores({ findings, responsive: responsive.summary, evaluated });
 
     const now = new Date().toISOString();
@@ -98,6 +102,7 @@ export async function runScan(scan: ScanRow, redis: Redis): Promise<void> {
       viewports: responsive.viewports,
       stack,
       security: security.summary,
+      seo: seo.summary,
     };
 
     await scans.complete(scan.id, fullReport);

@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch --env-file-if-exists=../../.env src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node --env-file-if-exists=../../.env dist/server.js",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/*.test.ts"
   },
@@ -23,6 +23,7 @@
     "nanoid": "^5.1.5"
   },
   "devDependencies": {
+    "@types/node": "^24.3.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.3"
   }
