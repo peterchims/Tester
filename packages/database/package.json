@@ -13,7 +13,7 @@
   "scripts": {
     "build": "tsc && cp src/schema.sql dist/schema.sql",
     "typecheck": "tsc --noEmit",
-    "migrate": "tsx src/migrate.ts"
+    "migrate": "tsx --env-file-if-exists=../../.env src/migrate.ts"
   },
   "dependencies": {
     "kysely": "^0.27.4",
