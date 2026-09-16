@@ -1,6 +1,7 @@
 import { createReadStream, existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname, join, normalize, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, join, normalize, resolve, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Readable } from 'node:stream';
 
 /**
@@ -9,7 +10,16 @@ import type { Readable } from 'node:stream';
  * The default driver writes to a local directory that the API and worker share
  * (a bind-mounted volume in Docker, the same folder in local dev). The abstraction
  * leaves room for an S3/MinIO driver later without touching call sites.
+ *
+ * A *relative* ARTIFACTS_DIR must not be resolved against `process.cwd()`: npm
+ * workspace scripts run the API from `apps/api` and the worker from
+ * `apps/worker`, so `./artifacts` would silently resolve to two different
+ * physical folders — the worker writes screenshots the API can never find.
+ * Anchor relative paths to the repo root instead; an absolute path (Docker
+ * sets `/artifacts`) is used as-is.
  */
+const REPO_ROOT = fileURLToPath(new URL('../../../', import.meta.url)); // packages/storage/dist/index.js -> repo root
+
 export interface ArtifactStore {
   put(key: string, data: Buffer): Promise<void>;
   getStream(key: string): Readable;
@@ -20,7 +30,7 @@ export class FilesystemStore implements ArtifactStore {
   private readonly root: string;
 
   constructor(root = process.env.ARTIFACTS_DIR ?? './artifacts') {
-    this.root = resolve(root);
+    this.root = isAbsolute(root) ? resolve(root) : resolve(REPO_ROOT, root);
   }
 
   private pathFor(key: string): string {

@@ -6,3 +6,5 @@ export { ScanBrowser } from './session.js';
 export type { PageCapture, ViewportRender, NetworkEntry } from './session.js';
 export { runResponsiveProbe } from './probe.js';
 export type { ProbeResult, ProbeOffender } from './probe.js';
+export { extractSeoDom } from './seoExtract.js';
+export type { SeoDomExtract, SeoHeading } from './seoExtract.js';

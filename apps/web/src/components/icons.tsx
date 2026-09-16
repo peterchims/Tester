@@ -9,6 +9,7 @@ export {
   Layout,
   Lock,
   Monitor,
+  Search,
   ShieldAlert,
   ShieldCheck,
   Smartphone,

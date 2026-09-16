@@ -7,12 +7,12 @@ import {
 } from '@techtester/contracts';
 
 const CATEGORY_WEIGHT: Record<FindingCategory, number> = {
-  responsiveness: 0.34,
-  security: 0.34,
-  performance: 0.14,
-  accessibility: 0.1,
-  seo: 0.05,
-  'best-practices': 0.03,
+  responsiveness: 0.3,
+  security: 0.3,
+  seo: 0.2,
+  performance: 0.12,
+  accessibility: 0.06,
+  'best-practices': 0.02,
 };
 
 export interface ScoreInput {

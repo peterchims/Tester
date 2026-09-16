@@ -7,6 +7,7 @@ const STEPS: { stage: ScanStage; label: string }[] = [
   { stage: 'stack', label: 'Detect architecture' },
   { stage: 'responsive', label: 'Test every viewport' },
   { stage: 'security', label: 'Audit security' },
+  { stage: 'seo', label: 'Audit SEO structure' },
   { stage: 'scoring', label: 'Score the run' },
 ];
 

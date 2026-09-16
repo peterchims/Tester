@@ -31,5 +31,6 @@ export function toReport(row: ScanRow): ScanReport {
     viewports: [],
     stack: null,
     security: null,
+    seo: null,
   };
 }
