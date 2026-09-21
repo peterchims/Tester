@@ -104,12 +104,15 @@ export const scans = {
       .execute();
   },
 
-  async markRunning(id: string): Promise<void> {
+  /** Returns the `started_at` timestamp it just wrote, so callers don't have to re-fetch the row to get it. */
+  async markRunning(id: string): Promise<Date> {
+    const startedAt = new Date();
     await getDb()
       .updateTable('scans')
-      .set({ status: 'running', stage: 'guard', progress: 2, started_at: new Date() })
+      .set({ status: 'running', stage: 'guard', progress: 2, started_at: startedAt })
       .where('id', '=', id)
       .execute();
+    return startedAt;
   },
 
   async updateProgress(

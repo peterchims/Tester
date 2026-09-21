@@ -111,6 +111,19 @@ test('isDisallowed matches a full-site block and a specific prefix', () => {
   assert.equal(isDisallowed([], '/public'), false);
 });
 
+test('isDisallowed treats regex metacharacters in a rule as literal characters', () => {
+  // A `.` in a Disallow rule must match a literal dot, not "any character" —
+  // otherwise /search.php would also (wrongly) block /searchXphp.
+  assert.equal(isDisallowed(['/search.php'], '/search.php'), true);
+  assert.equal(isDisallowed(['/search.php'], '/searchXphp'), false);
+});
+
+test('isDisallowed still honours the * wildcard and trailing $ end-anchor', () => {
+  assert.equal(isDisallowed(['/private/*'], '/private/anything'), true);
+  assert.equal(isDisallowed(['/file.php$'], '/file.php'), true);
+  assert.equal(isDisallowed(['/file.php$'], '/file.phpx'), false);
+});
+
 test('normalizeUrl strips a trailing slash and the hash so sitemap matching is stable', () => {
   assert.equal(normalizeUrl('https://example.com/page/'), normalizeUrl('https://example.com/page'));
   assert.equal(normalizeUrl('https://example.com/page#section'), normalizeUrl('https://example.com/page'));

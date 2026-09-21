@@ -2,6 +2,7 @@
 import { use, useEffect, useState } from 'react';
 import type { ProgressEvent, ScanReport } from '@techtester/contracts';
 import { getScanReport, watchScanProgress } from '@/lib/api';
+import { hostOf } from '@/lib/url';
 import { PipelineSteps } from '@/components/PipelineSteps';
 import { StatusPill } from '@/components/StatusPill';
 import { ScoreBadge } from '@/components/ScoreBadge';
@@ -152,12 +153,4 @@ function FindingsList({ findings }: { findings: ScanReport['findings'] }) {
 
 function categoryLabel(category: string): string {
   return { responsiveness: 'Responsive', security: 'Security', performance: 'Performance', accessibility: 'Accessibility', seo: 'SEO', 'best-practices': 'Best practices' }[category] ?? category;
-}
-
-function hostOf(url: string): string {
-  try {
-    return new URL(url).host;
-  } catch {
-    return url;
-  }
 }

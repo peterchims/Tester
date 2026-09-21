@@ -1,6 +1,6 @@
 import { Worker } from 'bullmq';
 import { migrate, scans, closeDb } from '@techtester/database';
-import { SCAN_QUEUE, redisConnection, type ScanJob } from '@techtester/queue';
+import { SCAN_QUEUE, SCAN_WORKER_OPTIONS, publishProgress, redisConnection, type ScanJob } from '@techtester/queue';
 import { runScan } from './pipeline.js';
 
 const CONCURRENCY = Number(process.env.SCAN_CONCURRENCY ?? 2);
@@ -23,23 +23,18 @@ async function main(): Promise<void> {
       } catch (error) {
         const message = (error as Error).message ?? 'Scan failed';
         await scans.fail(scan.id, message);
-        await publisher
-          .publish(
-            `techtester:progress:${scan.id}`,
-            JSON.stringify({
-              scanId: scan.id,
-              stage: 'error',
-              status: 'failed',
-              message,
-              progress: 100,
-              at: new Date().toISOString(),
-            }),
-          )
-          .catch(() => undefined);
+        await publishProgress(publisher, {
+          scanId: scan.id,
+          stage: 'error',
+          status: 'failed',
+          message,
+          progress: 100,
+          at: new Date().toISOString(),
+        }).catch(() => undefined);
         throw error;
       }
     },
-    { connection, concurrency: CONCURRENCY, lockDuration: 180_000 },
+    { connection, concurrency: CONCURRENCY, ...SCAN_WORKER_OPTIONS },
   );
 
   worker.on('completed', (job) => console.log(`[worker] completed ${job.id}`));

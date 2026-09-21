@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import type { ScanSummary } from '@techtester/contracts';
 import { ArrowRight, Layout, Lock, Search, ShieldCheck, Smartphone } from '@/components/icons';
 import { ApiError, createScan, listRecentScans } from '@/lib/api';
+import { hostOf } from '@/lib/url';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { StatusPill } from '@/components/StatusPill';
 
@@ -133,12 +134,4 @@ export default function Home() {
       </footer>
     </div>
   );
-}
-
-function hostOf(url: string): string {
-  try {
-    return new URL(url).host;
-  } catch {
-    return url;
-  }
 }

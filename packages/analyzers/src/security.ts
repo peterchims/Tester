@@ -1,7 +1,6 @@
-import { nanoid } from 'nanoid';
 import { safeFetch } from '@techtester/browser';
-import type { Finding, SecurityHeaderCheck, SecuritySummary, Severity, TlsSummary } from '@techtester/contracts';
-import type { AnalyzerContext } from './context.js';
+import { SEVERITY_PENALTY, type Finding, type SecurityHeaderCheck, type SecuritySummary, type Severity, type TlsSummary } from '@techtester/contracts';
+import { headerGetter, makeFindingFactory, type AnalyzerContext } from './context.js';
 
 export interface SecurityAnalysis {
   summary: SecuritySummary;
@@ -9,12 +8,30 @@ export interface SecurityAnalysis {
 }
 
 const DOC = 'https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers';
+const sec = makeFindingFactory('security', 'security', [DOC]);
 
 export async function analyzeSecurity(ctx: AnalyzerContext): Promise<SecurityAnalysis> {
   const res = ctx.raw.response;
-  const h = (name: string) => res.headers.get(name);
+  const h = headerGetter(ctx.raw);
   const findings: Finding[] = [];
   const isHttps = ctx.target.protocol === 'https:';
+
+  // --- Availability -----------------------------------------------------
+  // Every other check below still runs against whatever body came back, but a
+  // non-2xx response usually means the "page" being audited is an error page,
+  // not the site's real content — that has to be surfaced, not scored silently.
+  if (!res.ok) {
+    findings.push(
+      sec(
+        res.status >= 500 ? 'critical' : 'high',
+        `Target responded with HTTP ${res.status}`,
+        `The scanned URL returned HTTP ${res.status}${res.statusText ? ` ${res.statusText}` : ''} instead of a successful response. Every check in this report still ran against whatever body was returned, but that may be an error page rather than the site's real content.`,
+        'Confirm the URL is correct and that the origin serves it successfully before relying on the rest of this report.',
+        undefined,
+        { status: res.status },
+      ),
+    );
+  }
 
   // --- Header checks ---------------------------------------------------
   const headers: SecurityHeaderCheck[] = [];
@@ -279,33 +296,14 @@ async function probePaths(target: URL): Promise<{ exposed: { path: string; sever
 
 // ---------------------------------------------------------------------------
 
-function sec(
-  severity: Severity,
-  title: string,
-  description: string,
-  recommendation: string,
-  fixSnippet?: string,
-  evidence?: Record<string, unknown>,
-): Finding {
-  return {
-    id: nanoid(10),
-    analyzer: 'security',
-    category: 'security',
-    severity,
-    title,
-    description,
-    recommendation,
-    fixSnippet,
-    evidence,
-    references: [DOC],
-    affectedViewports: [],
-  };
-}
-
-function gradeFor(findings: Finding[]): SecuritySummary['grade'] {
-  const score =
-    100 -
-    findings.reduce((sum, f) => sum + { critical: 45, high: 22, medium: 10, low: 3, info: 0 }[f.severity], 0);
+/**
+ * Derives the A-F grade from the same {@link SEVERITY_PENALTY} table the
+ * "security" category score is computed from (see `scoring.ts`), so the
+ * letter grade and the numeric score can never disagree about how bad a set
+ * of findings is.
+ */
+export function gradeFor(findings: Finding[]): SecuritySummary['grade'] {
+  const score = 100 - findings.reduce((sum, f) => sum + SEVERITY_PENALTY[f.severity], 0);
   if (score >= 90) return 'A';
   if (score >= 75) return 'B';
   if (score >= 55) return 'C';
