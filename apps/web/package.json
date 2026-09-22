@@ -2,10 +2,12 @@
   "name": "@techtester/web",
   "private": true,
   "scripts": {
+    "predev": "npm run build --workspace=@techtester/contracts",
     "dev": "next dev",
+    "prebuild": "npm run build --workspace=@techtester/contracts",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "npm run build --workspace=@techtester/contracts && tsc --noEmit"
   },
   "dependencies": {
     "@techtester/contracts": "*",
