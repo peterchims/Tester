@@ -27,6 +27,12 @@ export interface PageCapture {
   generatorMeta: string | null;
   /** Content/meta signals extracted from the rendered DOM, for the SEO analyzer. */
   seo: SeoDomExtract;
+  /**
+   * The desktop viewport's responsive probe + full-page screenshot, captured
+   * from this same page load. The desktop profile is also part of the render
+   * matrix, so the caller can reuse this instead of navigating a second time.
+   */
+  desktopRender: ViewportRender;
 }
 
 export interface ViewportRender {
@@ -34,6 +40,10 @@ export interface ViewportRender {
   probe: ProbeResult;
   screenshot: Buffer;
 }
+
+/** Shared navigation/settle timeouts, so tuning one doesn't require hunting through both call sites for the other. */
+const NAV_TIMEOUT_MS = 45_000;
+const NETWORK_IDLE_TIMEOUT_MS = 15_000;
 
 const GLOBAL_SNIFFERS = `(() => {
   const w = window;
@@ -131,15 +141,20 @@ export class ScanBrowser {
 
     let status = 0;
     try {
-      const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
+      const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT_MS });
       status = response?.status() ?? 0;
-      await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => undefined);
+      await page.waitForLoadState('networkidle', { timeout: NETWORK_IDLE_TIMEOUT_MS }).catch(() => undefined);
     } catch (error) {
       await context.close();
       throw new Error(`Could not load the page: ${(error as Error).message}`);
     }
 
-    const [renderedHtml, globals, generatorMeta, cookies, seo] = await Promise.all([
+    // This same load also stands in for the "Desktop" entry in the viewport
+    // matrix — settle + probe + screenshot here once, instead of the pipeline
+    // opening a second context and re-navigating just to render that profile.
+    await settleLayout(page);
+
+    const [renderedHtml, globals, generatorMeta, cookies, seo, probe, screenshot] = await Promise.all([
       page.content(),
       page.evaluate(GLOBAL_SNIFFERS).catch(() => ({}) as Record<string, boolean>),
       page
@@ -147,6 +162,8 @@ export class ScanBrowser {
         .catch(() => null),
       context.cookies().catch(() => []),
       page.evaluate(`(${extractSeoDom.toString()})()`).catch(() => EMPTY_SEO_DOM) as Promise<SeoDomExtract>,
+      page.evaluate(`(${runResponsiveProbe.toString()})()`) as Promise<ProbeResult>,
+      page.screenshot({ fullPage: true, type: 'png' }),
     ]);
 
     const finalUrl = page.url();
@@ -170,6 +187,7 @@ export class ScanBrowser {
       globals: globals as Record<string, boolean>,
       generatorMeta,
       seo,
+      desktopRender: { profile: BASE_DESKTOP, probe, screenshot },
     };
   }
 
@@ -178,8 +196,8 @@ export class ScanBrowser {
     const context = await this.newContext(profile);
     const page = await context.newPage();
     try {
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45_000 });
-      await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => undefined);
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: NAV_TIMEOUT_MS });
+      await page.waitForLoadState('networkidle', { timeout: NETWORK_IDLE_TIMEOUT_MS }).catch(() => undefined);
       await settleLayout(page);
       const probe = (await page.evaluate(`(${runResponsiveProbe.toString()})()`)) as ProbeResult;
       const screenshot = await page.screenshot({ fullPage: true, type: 'png' });

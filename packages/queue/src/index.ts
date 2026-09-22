@@ -8,6 +8,18 @@ export interface ScanJob {
   scanId: string;
 }
 
+/** Options for enqueuing a scan job — kept next to the queue name so the producer (API) and consumer (worker) can't drift apart. */
+export const SCAN_JOB_OPTIONS = { removeOnComplete: 100, removeOnFail: 50 } as const;
+
+/**
+ * Worker-side job options. `lockDuration` is renewed automatically while the
+ * worker process is alive, so this is a ceiling, not a real per-scan budget —
+ * but it should stay comfortably above the browser package's own worst-case
+ * timeout budget (see `packages/browser`'s render timeouts) rather than being
+ * tuned independently of it.
+ */
+export const SCAN_WORKER_OPTIONS = { lockDuration: 180_000 } as const;
+
 export function redisConnection(): Redis {
   return new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
     maxRetriesPerRequest: null,

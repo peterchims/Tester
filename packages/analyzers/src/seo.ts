@@ -1,7 +1,6 @@
-import { nanoid } from 'nanoid';
 import { safeFetch } from '@techtester/browser';
-import type { Finding, HeadingOutlineItem, KeywordSignal, Severity, SeoFieldCheck, SeoSummary, StructuredDataBlock } from '@techtester/contracts';
-import type { AnalyzerContext } from './context.js';
+import type { Finding, HeadingOutlineItem, KeywordSignal, SeoFieldCheck, SeoSummary, StructuredDataBlock } from '@techtester/contracts';
+import { makeFindingFactory, type AnalyzerContext } from './context.js';
 
 export interface SeoAnalysis {
   summary: SeoSummary;
@@ -9,6 +8,7 @@ export interface SeoAnalysis {
 }
 
 const DOC = 'https://developers.google.com/search/docs';
+const seo = makeFindingFactory('seo', 'seo', [DOC]);
 
 // A page's actual keyword profile is measured from its own text, headings, and
 // URL — never invented. "Ranking" itself (a search engine's live position for a
@@ -249,10 +249,21 @@ async function fetchRobotsTxt(target: URL): Promise<RobotsTxt> {
   }
 }
 
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * robots.txt's `Disallow` rules use a small pattern language (Google's
+ * extension): `*` matches any run of characters and a trailing `$` anchors
+ * the end of the path. Every other character — including regex metacharacters
+ * like `.`, `+`, `?`, `(`, `)` — is matched literally, so it must be escaped
+ * before being compiled into a real RegExp; otherwise e.g. `Disallow:
+ * /search.php` would also match `/searchXphp`.
+ */
 export function isDisallowed(rules: string[], pathname: string): boolean {
   return rules.some((rule) => {
     if (rule === '/') return true;
-    const pattern = rule.replace(/\*/g, '.*').replace(/\$$/, '$');
+    let pattern = escapeRegExp(rule).replace(/\\\*/g, '.*');
+    if (pattern.endsWith('\\$')) pattern = `${pattern.slice(0, -2)}$`;
     try {
       return new RegExp(`^${pattern}`).test(pathname);
     } catch {
@@ -397,29 +408,6 @@ export function socialCheck(tags: Record<string, string>, required: string[]): {
   const present = Object.keys(tags).length > 0;
   const missing = required.filter((key) => !tags[key]);
   return { present, missing: present ? missing : required };
-}
-
-function seo(
-  severity: Severity,
-  title: string,
-  description: string,
-  recommendation: string,
-  fixSnippet?: string,
-  evidence?: Record<string, unknown>,
-): Finding {
-  return {
-    id: nanoid(10),
-    analyzer: 'seo',
-    category: 'seo',
-    severity,
-    title,
-    description,
-    recommendation,
-    fixSnippet,
-    evidence,
-    references: [DOC],
-    affectedViewports: [],
-  };
 }
 
 const round = (n: number): number => Math.round(n * 100) / 100;

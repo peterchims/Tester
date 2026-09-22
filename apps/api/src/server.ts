@@ -6,7 +6,7 @@ import { nanoid } from 'nanoid';
 import { assertSafeTarget } from '@techtester/browser';
 import { createScanSchema, scanOptionsSchema } from '@techtester/contracts';
 import { closeDb, migrate, scans } from '@techtester/database';
-import { redisConnection, scanQueue, progressChannel } from '@techtester/queue';
+import { redisConnection, scanQueue, progressChannel, SCAN_JOB_OPTIONS } from '@techtester/queue';
 import { getArtifactStore, screenshotKey } from '@techtester/storage';
 import { toReport, toSummary } from './summary.js';
 
@@ -14,21 +14,27 @@ const SESSION_COOKIE = 'tt_session';
 const ALLOWED_ORIGINS = process.env.CORS_ORIGIN?.split(',');
 const app = Fastify({ logger: true, bodyLimit: 16_000 });
 
+/** Single source of truth for "is this origin allowed", shared by the cors plugin and the hand-streamed SSE route below. */
+function isOriginAllowed(origin: string | undefined): boolean {
+  if (!ALLOWED_ORIGINS) return true;
+  if (!origin) return false;
+  return ALLOWED_ORIGINS.includes(origin);
+}
+
 await app.register(cors, {
-  origin: ALLOWED_ORIGINS ?? true,
+  origin: (origin, callback) => callback(null, isOriginAllowed(origin)),
   credentials: true,
 });
 
 /**
  * The SSE route below writes straight to the raw response (so it can stream),
  * which skips Fastify's onSend hook — the one @fastify/cors uses to attach its
- * headers. Mirror that plugin's decision manually before writeHead.
+ * headers. Mirror that plugin's decision manually before writeHead, using the
+ * same isOriginAllowed() the plugin itself is configured with.
  */
 function corsHeadersFor(request: import('fastify').FastifyRequest): Record<string, string> {
   const origin = request.headers.origin;
-  if (!origin) return {};
-  const allowed = !ALLOWED_ORIGINS || ALLOWED_ORIGINS.includes(origin);
-  if (!allowed) return {};
+  if (!origin || !isOriginAllowed(origin)) return {};
   return {
     'access-control-allow-origin': origin,
     'access-control-allow-credentials': 'true',
@@ -65,7 +71,9 @@ app.post('/v1/scans', {
 }, async (request, reply) => {
   const parsed = createScanSchema.safeParse(request.body);
   if (!parsed.success) {
-    return reply.code(400).send({ error: 'VALIDATION_ERROR', details: parsed.error.flatten() });
+    const details = parsed.error.flatten();
+    const message = details.fieldErrors.url?.[0] ?? details.formErrors[0] ?? 'The request was invalid.';
+    return reply.code(400).send({ error: 'VALIDATION_ERROR', message, details });
   }
 
   try {
@@ -84,7 +92,7 @@ app.post('/v1/scans', {
     options,
   });
 
-  await scanQueue().add('scan', { scanId: scan.id }, { removeOnComplete: 100, removeOnFail: 50 });
+  await scanQueue().add('scan', { scanId: scan.id }, SCAN_JOB_OPTIONS);
   return reply.code(202).send({ data: toSummary(scan) });
 });
 
@@ -126,6 +134,11 @@ app.get('/v1/scans/:id/events', async (request, reply) => {
   const scan = await scans.get(id);
   if (!scan) return reply.code(404).send({ error: 'SCAN_NOT_FOUND' });
 
+  // Writing straight to reply.raw bypasses Fastify's normal reply lifecycle —
+  // hijack() tells Fastify not to also try to send its own reply once this
+  // handler's promise resolves (which, without it, races the stream: Fastify
+  // finalizes the "empty" reply while the raw response is still open).
+  reply.hijack();
   reply.raw.writeHead(200, {
     'content-type': 'text/event-stream',
     'cache-control': 'no-cache',
@@ -133,35 +146,49 @@ app.get('/v1/scans/:id/events', async (request, reply) => {
     ...corsHeadersFor(request),
   });
 
-  const send = (data: unknown) => reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
+  let ended = false;
+  const subscriber = redisConnection();
+  const send = (data: unknown) => {
+    if (!ended) reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+  const finish = () => {
+    if (ended) return;
+    ended = true;
+    clearInterval(heartbeat);
+    subscriber.disconnect();
+    reply.raw.end();
+  };
+
   send({ scanId: id, stage: scan.stage, status: scan.status, progress: scan.progress, message: 'connected', at: new Date().toISOString() });
 
-  if (scan.status === 'completed' || scan.status === 'failed') {
-    send({ scanId: id, stage: scan.stage, status: scan.status, progress: 100, message: 'done', at: new Date().toISOString() });
-    reply.raw.end();
-    return;
-  }
-
-  const subscriber = redisConnection();
   await subscriber.subscribe(progressChannel(id));
   subscriber.on('message', (_channel, payload) => {
+    if (ended) return;
     reply.raw.write(`data: ${payload}\n\n`);
     try {
       const event = JSON.parse(payload) as { status: string };
-      if (event.status === 'completed' || event.status === 'failed') {
-        subscriber.disconnect();
-        reply.raw.end();
-      }
+      if (event.status === 'completed' || event.status === 'failed') finish();
     } catch {
-      /* ignore */
+      /* ignore malformed frame */
     }
   });
 
-  const heartbeat = setInterval(() => reply.raw.write(': ping\n\n'), 15_000);
-  request.raw.on('close', () => {
-    clearInterval(heartbeat);
-    subscriber.disconnect();
-  });
+  const heartbeat = setInterval(() => {
+    if (!ended) reply.raw.write(': ping\n\n');
+  }, 15_000);
+
+  // Re-check the scan's status now that the subscription is live. This closes
+  // the gap between the initial `scans.get()` above and `subscribe()` below —
+  // if the scan finished in that window, the publish could otherwise be
+  // missed entirely (pub/sub doesn't replay past messages).
+  const latest = await scans.get(id);
+  if (latest && (latest.status === 'completed' || latest.status === 'failed')) {
+    send({ scanId: id, stage: latest.stage, status: latest.status, progress: 100, message: 'done', at: new Date().toISOString() });
+    finish();
+    return;
+  }
+
+  request.raw.on('close', finish);
 });
 
 app.setErrorHandler((error, _request, reply) => {

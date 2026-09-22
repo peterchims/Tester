@@ -1,8 +1,9 @@
 import type { RenderingMode, StackDetection, StackKind, StackReport } from '@techtester/contracts';
-import type { AnalyzerContext } from './context.js';
+import { headerGetter, type AnalyzerContext } from './context.js';
 
 interface Signals {
-  headers: Headers;
+  header: (name: string) => string;
+  headerPresent: (name: string) => boolean;
   rawHtml: string;
   renderedHtml: string;
   network: string[];
@@ -18,7 +19,7 @@ interface Rule {
   test: (s: Signals) => false | { confidence: number; evidence: string; version?: string | null };
 }
 
-const header = (s: Signals, name: string): string => s.headers.get(name)?.toLowerCase() ?? '';
+const header = (s: Signals, name: string): string => s.header(name);
 
 const RULES: Rule[] = [
   // --- Frameworks / meta-frameworks -------------------------------------
@@ -30,7 +31,7 @@ const RULES: Rule[] = [
       if (s.globals.next) ev.push('window.__NEXT_DATA__');
       if (/\/_next\/static\//.test(s.rawHtml) || s.network.some((u) => /\/_next\/static\//.test(u))) ev.push('/_next/static/ assets');
       if (header(s, 'x-powered-by').includes('next.js')) ev.push('x-powered-by: Next.js');
-      if (s.headers.has('x-nextjs-cache') || s.headers.has('x-nextjs-prerender')) ev.push('x-nextjs-* headers');
+      if (s.headerPresent('x-nextjs-cache') || s.headerPresent('x-nextjs-prerender')) ev.push('x-nextjs-* headers');
       if (!ev.length) return false;
       const version = s.rawHtml.match(/"next"\s*:\s*"([\d.]+)"/)?.[1] ?? null;
       return { confidence: 0.98, evidence: ev.join(', '), version };
@@ -160,12 +161,12 @@ const RULES: Rule[] = [
   {
     kind: 'hosting',
     name: 'Vercel',
-    test: (s) => (s.headers.has('x-vercel-id') || header(s, 'server') === 'vercel' ? { confidence: 0.97, evidence: 'x-vercel-id / server: Vercel' } : false),
+    test: (s) => (s.headerPresent('x-vercel-id') || header(s, 'server') === 'vercel' ? { confidence: 0.97, evidence: 'x-vercel-id / server: Vercel' } : false),
   },
   {
     kind: 'hosting',
     name: 'Netlify',
-    test: (s) => (s.headers.has('x-nf-request-id') || header(s, 'server').includes('netlify') ? { confidence: 0.97, evidence: 'x-nf-request-id / server: Netlify' } : false),
+    test: (s) => (s.headerPresent('x-nf-request-id') || header(s, 'server').includes('netlify') ? { confidence: 0.97, evidence: 'x-nf-request-id / server: Netlify' } : false),
   },
   {
     kind: 'hosting',
@@ -175,12 +176,12 @@ const RULES: Rule[] = [
   {
     kind: 'hosting',
     name: 'Cloudflare Pages',
-    test: (s) => (s.headers.has('cf-ray') && header(s, 'server') === 'cloudflare' && s.network.some((u) => /\.pages\.dev/.test(u)) ? { confidence: 0.7, evidence: 'cf-ray + pages.dev asset host' } : false),
+    test: (s) => (s.headerPresent('cf-ray') && header(s, 'server') === 'cloudflare' && s.network.some((u) => /\.pages\.dev/.test(u)) ? { confidence: 0.7, evidence: 'cf-ray + pages.dev asset host' } : false),
   },
   {
     kind: 'cdn',
     name: 'Cloudflare',
-    test: (s) => (s.headers.has('cf-ray') || header(s, 'server') === 'cloudflare' ? { confidence: 0.95, evidence: 'cf-ray header' } : false),
+    test: (s) => (s.headerPresent('cf-ray') || header(s, 'server') === 'cloudflare' ? { confidence: 0.95, evidence: 'cf-ray header' } : false),
   },
   {
     kind: 'cdn',
@@ -190,19 +191,19 @@ const RULES: Rule[] = [
   {
     kind: 'cdn',
     name: 'Amazon CloudFront',
-    test: (s) => (header(s, 'via').includes('cloudfront') || s.headers.has('x-amz-cf-id') ? { confidence: 0.95, evidence: 'x-amz-cf-id / via: CloudFront' } : false),
+    test: (s) => (header(s, 'via').includes('cloudfront') || s.headerPresent('x-amz-cf-id') ? { confidence: 0.95, evidence: 'x-amz-cf-id / via: CloudFront' } : false),
   },
 
   // --- Servers / languages -----------------------------------------
   {
     kind: 'server',
     name: 'Nginx',
-    test: (s) => (header(s, 'server').includes('nginx') ? { confidence: 0.9, evidence: `server: ${s.headers.get('server')}`, version: header(s, 'server').match(/nginx\/([\d.]+)/)?.[1] ?? null } : false),
+    test: (s) => (header(s, 'server').includes('nginx') ? { confidence: 0.9, evidence: `server: ${s.header('server')}`, version: header(s, 'server').match(/nginx\/([\d.]+)/)?.[1] ?? null } : false),
   },
   {
     kind: 'server',
     name: 'Apache',
-    test: (s) => (header(s, 'server').includes('apache') ? { confidence: 0.9, evidence: `server: ${s.headers.get('server')}`, version: header(s, 'server').match(/apache\/([\d.]+)/)?.[1] ?? null } : false),
+    test: (s) => (header(s, 'server').includes('apache') ? { confidence: 0.9, evidence: `server: ${s.header('server')}`, version: header(s, 'server').match(/apache\/([\d.]+)/)?.[1] ?? null } : false),
   },
   {
     kind: 'language',
@@ -212,7 +213,7 @@ const RULES: Rule[] = [
   {
     kind: 'language',
     name: 'ASP.NET',
-    test: (s) => (s.headers.has('x-aspnet-version') || header(s, 'x-powered-by').includes('asp.net') ? { confidence: 0.85, evidence: 'x-aspnet-version / x-powered-by' } : false),
+    test: (s) => (s.headerPresent('x-aspnet-version') || header(s, 'x-powered-by').includes('asp.net') ? { confidence: 0.85, evidence: 'x-aspnet-version / x-powered-by' } : false),
   },
   {
     kind: 'language',
@@ -244,8 +245,10 @@ const RULES: Rule[] = [
 ];
 
 export function analyzeStack(ctx: AnalyzerContext): StackReport {
+  const rawHeader = headerGetter(ctx.raw);
   const signals: Signals = {
-    headers: ctx.raw.response.headers,
+    header: (name) => rawHeader(name)?.toLowerCase() ?? '',
+    headerPresent: (name) => rawHeader(name) !== null,
     rawHtml: ctx.raw.body,
     renderedHtml: ctx.capture.renderedHtml,
     network: ctx.capture.network.map((n) => n.url),
@@ -307,7 +310,9 @@ function classifyRendering(s: Signals, detections: StackDetection[]): RenderingM
   }
 
   const staticHost = detections.some((d) => ['Netlify', 'GitHub Pages', 'Cloudflare Pages', 'Vercel'].includes(d.name));
-  const immutableCache = (s.headers.get('cache-control') ?? '').includes('immutable') || s.headers.has('age');
+  // `Age` alone just means "served through a cache" — true of any CDN-fronted
+  // response, dynamic or not — so it's not evidence of immutability on its own.
+  const immutableCache = s.header('cache-control').includes('immutable');
 
   if (ratio < 0.3) return 'csr';
   if (ratio > 0.75) {
