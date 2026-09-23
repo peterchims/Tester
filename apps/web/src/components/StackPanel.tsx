@@ -1,3 +1,5 @@
+'use client';
+import { useEffect, useState } from 'react';
 import type { StackReport } from '@techtester/contracts';
 import { Layers } from './icons';
 
@@ -19,6 +21,12 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 export function StackPanel({ stack }: { stack: StackReport }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   const groups = new Map<string, typeof stack.detections>();
   for (const d of stack.detections) {
     if (!groups.has(d.kind)) groups.set(d.kind, []);
@@ -28,7 +36,7 @@ export function StackPanel({ stack }: { stack: StackReport }) {
   return (
     <div className="stackPanel">
       <div className="stackHeadline">
-        <Layers size={18} />
+        <Layers size={16} />
         <div>
           <b>{stack.primaryFramework ?? 'No JS framework detected'}</b>
           <span>{stack.detections.find((d) => d.kind === 'rendering')?.name}</span>
@@ -48,7 +56,7 @@ export function StackPanel({ stack }: { stack: StackReport }) {
                   <span className="confidence">{Math.round(d.confidence * 100)}%</span>
                 </div>
                 <div className="confidenceBar">
-                  <i style={{ width: `${Math.round(d.confidence * 100)}%` }} />
+                  <i style={{ width: mounted ? `${Math.round(d.confidence * 100)}%` : 0 }} />
                 </div>
                 <p className="stackEvidence">{d.evidence.join('; ')}</p>
               </div>

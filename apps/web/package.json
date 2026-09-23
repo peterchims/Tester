@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "predev": "npm run build --workspace=@techtester/contracts",
-    "dev": "next dev",
+    "dev": "next dev -p 3010",
     "prebuild": "npm run build --workspace=@techtester/contracts",
     "build": "next build",
     "start": "next start",
