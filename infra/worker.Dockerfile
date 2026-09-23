@@ -1,4 +1,7 @@
-FROM mcr.microsoft.com/playwright:v1.49.1-noble AS build
+# This tag's version must exactly match the `playwright` version pinned in
+# packages/browser/package.json — the browser binaries baked into this image
+# only work with the matching npm package version. Bump both together.
+FROM mcr.microsoft.com/playwright:v1.63.0-noble AS build
 WORKDIR /app
 COPY package*.json ./
 COPY packages/contracts/package.json packages/contracts/
@@ -19,7 +22,7 @@ RUN npm run build --workspace=@techtester/contracts \
  && npm run build --workspace=@techtester/analyzers \
  && npm run build --workspace=@techtester/worker
 
-FROM mcr.microsoft.com/playwright:v1.49.1-noble AS runtime
+FROM mcr.microsoft.com/playwright:v1.63.0-noble AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /app/node_modules node_modules
