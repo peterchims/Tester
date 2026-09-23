@@ -34,13 +34,19 @@ npm run migrate
 npm run dev   # runs api + worker + web together
 ```
 
-Web: `http://localhost:3000` · API: `http://localhost:4100`.
+Web: `http://localhost:3010` · API: `http://localhost:4100`.
 
-Or run the complete stack, including Postgres and Redis, with:
+Or run the complete stack — Postgres, Redis, the api/worker/web services, and an
+nginx reverse proxy in front of them — with:
 
 ```bash
 docker compose up --build
 ```
+
+Everything is served through nginx at **`http://localhost`** (port 80). Postgres,
+Redis, the API, and the web app itself are not published to the host — only nginx
+is internet-facing, and it routes `/v1/*` to the API and everything else to the web
+app on a single origin (no CORS involved).
 
 ## How a scan works
 

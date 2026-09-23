@@ -5,7 +5,8 @@ services:
       POSTGRES_DB: techtester
       POSTGRES_USER: techtester
       POSTGRES_PASSWORD: techtester
-    ports: ["5432:5432"]
+    # No published port: only other containers on this network need Postgres.
+    expose: ["5432"]
     volumes: [techtester-data:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U techtester"]
@@ -15,7 +16,8 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports: ["6379:6379"]
+    # No published port: only other containers on this network need Redis.
+    expose: ["6379"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -28,9 +30,13 @@ services:
       DATABASE_URL: postgresql://techtester:techtester@postgres:5432/techtester
       REDIS_URL: redis://redis:6379
       API_PORT: 4100
-      CORS_ORIGIN: http://localhost:3000
+      # Same-origin in production (browser talks to nginx, which proxies to
+      # both api and web) — this only matters for a direct, cross-origin
+      # caller of the API itself. Adjust to your real domain if you have one.
+      CORS_ORIGIN: http://localhost
       ARTIFACTS_DIR: /artifacts
-    ports: ["4100:4100"]
+    # No published port: reached only via the nginx proxy.
+    expose: ["4100"]
     volumes: [artifacts:/artifacts]
     depends_on:
       postgres: { condition: service_healthy }
@@ -57,12 +63,31 @@ services:
     build:
       context: .
       dockerfile: infra/web.Dockerfile
-      args: { NEXT_PUBLIC_API_URL: http://localhost:4100 }
-    ports: ["3000:3000"]
+      # Empty = relative fetches (e.g. `/v1/scans`), resolved by the browser
+      # against whatever origin it loaded the page from — i.e. nginx. Only
+      # set this to an absolute URL if the API is ever served from a
+      # genuinely different origin than the web app.
+      args: { NEXT_PUBLIC_API_URL: '' }
+    # No published port: reached only via the nginx proxy.
+    expose: ["3000"]
     depends_on:
       api: { condition: service_healthy }
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  nginx:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports: ["80:80"]
+    depends_on:
+      api: { condition: service_healthy }
+      web: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
       interval: 10s
       timeout: 3s
       retries: 5
