@@ -8,5 +8,10 @@ const LABEL: Record<ScanStatus, string> = {
 };
 
 export function StatusPill({ status }: { status: ScanStatus }) {
-  return <span className={`statusPill ${status}`}>{LABEL[status]}</span>;
+  return (
+    <span className={`statusPill ${status}`}>
+      {(status === 'queued' || status === 'running') && <span className="statusDot" />}
+      {LABEL[status]}
+    </span>
+  );
 }

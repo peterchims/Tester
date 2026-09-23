@@ -13,20 +13,25 @@ const STEPS: { stage: ScanStage; label: string }[] = [
 
 const ORDER: ScanStage[] = ['queued', ...STEPS.map((s) => s.stage), 'done'];
 
-export function PipelineSteps({ stage, failed }: { stage: ScanStage; failed: boolean }) {
+export function PipelineSteps({ stage, failed, progress }: { stage: ScanStage; failed: boolean; progress: number }) {
   const currentIndex = ORDER.indexOf(stage);
   return (
-    <ol className="pipeline">
-      {STEPS.map((step) => {
-        const index = ORDER.indexOf(step.stage);
-        const state = failed && index <= currentIndex ? 'error' : index < currentIndex ? 'done' : index === currentIndex ? 'active' : 'pending';
-        return (
-          <li key={step.stage} className={state}>
-            <span className="dot" />
-            {step.label}
-          </li>
-        );
-      })}
-    </ol>
+    <div className="pipelineWrap">
+      <div className="progressTrack">
+        <div className="progressFill" style={{ width: `${Math.max(2, Math.min(100, progress))}%` }} />
+      </div>
+      <ol className="pipeline">
+        {STEPS.map((step) => {
+          const index = ORDER.indexOf(step.stage);
+          const state = failed && index <= currentIndex ? 'error' : index < currentIndex ? 'done' : index === currentIndex ? 'active' : 'pending';
+          return (
+            <li key={step.stage} className={state}>
+              <span className="dot" />
+              {step.label}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }

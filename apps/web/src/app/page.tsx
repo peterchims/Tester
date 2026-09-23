@@ -7,6 +7,7 @@ import { ApiError, createScan, listRecentScans } from '@/lib/api';
 import { hostOf } from '@/lib/url';
 import { ScoreBadge } from '@/components/ScoreBadge';
 import { StatusPill } from '@/components/StatusPill';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Home() {
   const router = useRouter();
@@ -46,19 +47,20 @@ export default function Home() {
           <span className="mark">TT</span>
           <b>TechTester</b>
         </div>
-        <nav>
-          <a href="https://github.com" target="_blank" rel="noreferrer">
-            Docs
-          </a>
-        </nav>
+        <div className="topbarActions">
+          <nav>
+            <a href="https://github.com" target="_blank" rel="noreferrer">
+              Docs
+            </a>
+          </nav>
+          <ThemeToggle />
+        </div>
       </header>
 
       <main className="hero">
         <h1>Test any website before you ship it.</h1>
         <p className="lede">
-          Paste a URL. TechTester renders it across the full device matrix, fingerprints the architecture it was
-          built on, audits it for security gaps, and runs a deep SEO structure audit — with real screenshots and
-          fixes, not a mock dashboard.
+          One URL in. Real screenshots, architecture, security, and SEO out — every issue comes with a fix.
         </p>
 
         <form className="scanForm" onSubmit={submit}>
@@ -74,36 +76,36 @@ export default function Home() {
             />
             <button className="primary" disabled={busy}>
               {busy ? 'Starting…' : 'Run test'}
-              {!busy && <ArrowRight size={16} />}
+              {!busy && <ArrowRight size={14} />}
             </button>
           </div>
           <label className="consent">
             <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
-            <span>I own this site or am authorised to test it. Only passive checks and light public-path probes are used — no exploitation.</span>
+            <span>I own this site or am authorised to test it. Passive checks only — no exploitation.</span>
           </label>
           {error && <p className="formError">{error}</p>}
         </form>
 
         <div className="pillars">
           <div className="pillar">
-            <Smartphone size={20} />
+            <Smartphone size={18} />
             <b>Responsiveness</b>
-            <p>10 real viewports, from a 320px phone to 4K — with a % score and every element that leaves the screen.</p>
+            <p>10 viewports, phone to 4K — scored, with every overflowing element flagged.</p>
           </div>
           <div className="pillar">
-            <Layout size={20} />
+            <Layout size={18} />
             <b>Architecture</b>
-            <p>Framework, rendering mode, CSS system, hosting, CMS, and libraries — with the evidence behind each call.</p>
+            <p>Framework, rendering mode, hosting, and libraries — evidence for every call.</p>
           </div>
           <div className="pillar">
-            <ShieldCheck size={20} />
+            <ShieldCheck size={18} />
             <b>Security</b>
-            <p>Headers, TLS, cookies, mixed content, exposed paths, and vulnerable libraries — each with a concrete fix.</p>
+            <p>Headers, TLS, cookies, exposed paths, vulnerable libraries — each with a fix.</p>
           </div>
           <div className="pillar">
-            <Search size={20} />
+            <Search size={18} />
             <b>SEO</b>
-            <p>Indexability, title/meta length, heading structure, keyword placement, structured data, and sitemap coverage — measured from the page itself, not guessed.</p>
+            <p>Indexability, meta tags, headings, and keywords — measured, not guessed.</p>
           </div>
         </div>
       </main>
@@ -120,7 +122,7 @@ export default function Home() {
                 </div>
                 <div className="recentMeta">
                   <StatusPill status={scan.status} />
-                  {scan.overallScore !== null && <ScoreBadge score={scan.overallScore} />}
+                  {scan.overallScore !== null && <ScoreBadge score={scan.overallScore} size="sm" />}
                 </div>
               </a>
             ))}
@@ -129,8 +131,8 @@ export default function Home() {
       )}
 
       <footer className="footer">
-        <Lock size={14} />
-        <span>Scans are restricted to public HTTP(S) targets. Loopback and private-network addresses are always blocked.</span>
+        <Lock size={12} />
+        <span>Public HTTP(S) targets only — private networks are always blocked.</span>
       </footer>
     </div>
   );
